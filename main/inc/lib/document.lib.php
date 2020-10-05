@@ -593,6 +593,7 @@ class DocumentManager
         if ($search != true) {
             $where .= "docs.path NOT LIKE '".Database::escape_string($path.$addedSlash.'%/%')."' AND";
         }
+        //Added watermark (CSF watermark separate pdf documents with student related watermark -feature)
         $sql = "SELECT
                     docs.id,
                     docs.filetype,
@@ -602,6 +603,7 @@ class DocumentManager
                     docs.size,
                     docs.readonly,
                     docs.session_id,
+                    docs.watermark,
                     last.session_id item_property_session_id,
                     last.lastedit_date,
                     last.visibility,
@@ -715,7 +717,6 @@ class DocumentManager
             } else {
                 $finalDocumentData = $documentData;
             }
-
             return $finalDocumentData;
         }
 
@@ -1507,7 +1508,6 @@ class DocumentManager
                 }
             }
             $row['parents'] = $parents;
-
             return $row;
         }
 
@@ -2950,6 +2950,7 @@ class DocumentManager
      * @param string $path
      * @param string $title
      * @param string $comment
+     * @param bool   $watermark               // CSF watermark separate pdf documents with student related watermark -feature
      * @param int    $unzip                   unzip or not the file
      * @param string $ifExists                overwrite, rename or warn (default)
      * @param bool   $index_document          index document (search xapian module)
@@ -2968,6 +2969,7 @@ class DocumentManager
         $path,
         $title = '',
         $comment = '',
+        $watermark = 0,
         $unzip = 0,
         $ifExists = '',
         $index_document = false,
@@ -3032,6 +3034,10 @@ class DocumentManager
 
                         if (!empty($comment)) {
                             $params['comment'] = trim($comment);
+                        }
+                        
+                        if (!empty($watermark)) {
+                            $params['watermark'] = trim($watermark);
                         }
 
                         Database::update(
@@ -5115,6 +5121,8 @@ class DocumentManager
             $title = strip_tags($title);
         }
 
+        $watermark = $document_data['watermark']; // CSF watermark separate pdf documents with student related watermark -feature
+
         $filetype = $document_data['filetype'];
         $path = $document_data['path'];
         $url_path = urlencode($document_data['path']);
@@ -5125,17 +5133,23 @@ class DocumentManager
         // Add class="invisible" on invisible files
         $visibility_class = $visibility == false ? ' class="muted"' : '';
         $forcedownload_link = '';
+        $forcedownload_watermarked_link = '';
         $forcedownload_icon = '';
+        $forcedownload_watermarked_icon = '';
         $prevent_multiple_click = '';
         $force_download_html = '';
 
-        if (!$show_as_icon) {
+        if (!$show_as_icon || ($show_as_icon && $watermark==1)) { // CSF watermark separate pdf documents with student related watermark -feature
             // Build download link (icon)
             $forcedownload_link = $filetype == 'folder'
                 ? $pageUrl.'?'.$courseParams.'&action=downloadfolder&id='.$document_data['id']
                 : $pageUrl.'?'.$courseParams.'&amp;action=download&amp;id='.$document_data['id'];
+            $forcedownload_watermarked_link = $filetype == 'folder'
+                ? $pageUrl.'?'.$courseParams.'&action=downloadwatermarkedfolder&id='.$document_data['id']
+                : $pageUrl.'?'.$courseParams.'&amp;action=downloadwatermarked&amp;id='.$document_data['id'];
             // Folder download or file download?
             $forcedownload_icon = $filetype == 'folder' ? 'save_pack.png' : 'save.png';
+            $forcedownload_watermarked_icon = $filetype == 'folder' ? 'save_pack.png' : 'save.png';
             // Prevent multiple clicks on zipped folder download
             $prevent_multiple_click = $filetype == 'folder' ? " onclick=\"javascript: if(typeof clic_$dbl_click_id == 'undefined' || !clic_$dbl_click_id) { clic_$dbl_click_id=true; window.setTimeout('clic_".($dbl_click_id++)."=false;',10000); } else { return false; }\"" : '';
         }
@@ -5208,7 +5222,7 @@ class DocumentManager
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         $document_data['file_extension'] = $extension;
 
-        if (!$show_as_icon) {
+        if ((!$show_as_icon && $document_data['watermark'] == 0) || (!$show_as_icon && $document_data['watermark'] == 1 && $ext!='pdf') ) { // CSF watermark separate pdf documents with student related watermark -feature
             if ($filetype == 'folder') {
                 if ($isAllowedToEdit ||
                     api_is_platform_admin() ||
@@ -5238,7 +5252,8 @@ class DocumentManager
 
             // Copy files to user's myfiles
             if (api_get_setting('allow_my_files') === 'true' &&
-                api_get_setting('users_copy_files') === 'true' && api_is_anonymous() === false
+                api_get_setting('users_copy_files') === 'true' && api_is_anonymous() === false &&
+                ($document_data['watermark'] == 0 || ($document_data['watermark'] == 1 && $ext!='pdf')) // CSF watermark separate pdf documents with student related watermark -feature
             ) {
                 $copy_myfiles_link = $filetype === 'file' ? $pageUrl.'?'.$courseParams.'&action=copytomyfiles&id='.$document_data['id'] : api_get_self().'?'.$courseParams;
                 if ($filetype === 'file') {
@@ -5325,7 +5340,7 @@ class DocumentManager
                     $force_download_html.$send_to.$copyToMyFiles.$open_in_new_window_link.$pdf_icon;
             }
             // end copy files to users myfiles
-        } else {
+        } elseif (($show_as_icon && $document_data['watermark'] == 0) || ($show_as_icon && $document_data['watermark'] == 1 && $ext!='pdf') ) { // CSF watermark separate pdf documents with student related watermark -feature
             // Icon column
             if (preg_match('/shared_folder/', urldecode($checkExtension)) &&
                 preg_match('/shared_folder$/', urldecode($checkExtension)) == false &&
@@ -5400,6 +5415,22 @@ class DocumentManager
                         '</a>';
                 }
             }
+        } 
+        // CSF watermark separate pdf documents with student related watermark -feature
+        elseif (!$show_as_icon && $document_data['watermark'] == 1 && $ext=='pdf') {
+            return '<a href="'.$forcedownload_watermarked_link.'" title="'.$tooltip_title_alt.'" '.$visibility_class.' style="float:left">'.$title.'</a>'.
+                '<a href="'.$forcedownload_watermarked_link.'" style="float:right"'.$prevent_multiple_click.' download="'.$document_data['basename'].'">'.
+                    Display::return_icon($forcedownload_icon, get_lang('Download'), [], ICON_SIZE_SMALL).'</a>';
+        } elseif ($show_as_icon && $document_data['watermark'] == 1 && $ext=='pdf') {
+             // Icon column
+                     return '<a href="'.$forcedownload_watermarked_link.'" title="'.$tooltip_title_alt.'" '.$visibility_class.' style="float:left">'.
+                         self::build_document_icon_tag($filetype, $path, $isAllowedToEdit).
+                         '</a>';
+        }
+        elseif ($document_data['watermark'] == 1 && $ext!='pdf') {
+            return '<a href="'.$forcedownload_link.'" title="'.$tooltip_title_alt.'" '.$visibility_class.' style="float:left">'.$title.'</a>'.
+                '<a href="'.$forcedownload_link.'" style="float:right"'.$prevent_multiple_click.' download="'.$document_data['basename'].'">'.
+                    Display::return_icon($forcedownload_icon, get_lang('Download'), [], ICON_SIZE_SMALL).'</a>';
         }
     }
 

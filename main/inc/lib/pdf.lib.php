@@ -558,6 +558,39 @@ class PDF
         return $output_file;
     }
 
+    // CSF watermark separate pdf documents with student related watermark -feature
+    public static function pdf_to_pdf($full_file_name, $document_filename, $course_code)
+    {       
+            $pdf = new mPDF();
+            $pdf->SetImportUse();
+            $pageCount = $pdf->SetSourceFile($full_file_name);
+
+            //Set watermark text (this function is used only for watermarking existing pdf files)
+            $pdf->showWatermarkText = true;
+            $user = api_get_user_info();
+            $watermark_text = $user["complete_name"].' '.date("Y/m/d");
+            $pdf->SetWatermarkText($watermark_text);
+
+            for ($i=1; $i <= $pageCount; $i++) { 
+                $tplId = $pdf->ImportPage($i);
+                $size = $pdf->getTemplatesize($tplId);
+                $pdf->AddPageByArray([
+                    'orientation' => $size['w'] > $size['h'] ? 'L' : 'P',
+                    'sheet-size'=> $size['w'] > $size['h'] ? array($size['h'], $size['w']) : array($size['w'], $size['h'])
+                ]);
+                $pdf->UseTemplate($tplId);
+            }
+
+            //Make temp folder inside course folder to store watermarked pdf files
+            $output_dir = api_get_path(SYS_COURSE_PATH).'/'.api_get_course_path($course_code).'/temp';
+            if (!file_exists($output_dir)){
+                mkdir($output_dir);
+            }
+            $pdf->output($output_dir.$document_filename,'F');
+            return [$output_dir.$document_filename, $output_dir];
+            
+    }
+
     /**
      * Gets the watermark from the platform or a course.
      *

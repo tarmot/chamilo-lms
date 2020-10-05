@@ -104,6 +104,7 @@ switch ($action) {
                     $currentDirectory,
                     '',
                     '', // comment
+                    '', // watermarked or not, (CSF watermark separate pdf documents with student related watermark -feature)
                     $unzip,
                     $defaultFileExistsOption,
                     false,

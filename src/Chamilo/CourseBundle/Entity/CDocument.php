@@ -91,12 +91,19 @@ class CDocument
     protected $sessionId;
 
     /**
+     * @var bool
+     *
+     * @ORM\Column(name="watermark", type="boolean", nullable=false)
+     */
+    protected $watermark; // CSF watermark separate pdf documents with student related watermark -feature
+
+    /**
      * Set path.
      *
      * @param string $path
      *
      * @return CDocument
-     */
+     */    
     public function setPath($path)
     {
         $this->path = $path;
@@ -324,5 +331,29 @@ class CDocument
         $this->iid = $iid;
 
         return $this;
+    }
+    
+      /**
+     * Set watermark. CSF watermark separate pdf documents with student related watermark -feature
+     *
+     * @param bool $watermark
+     *
+     * @return CDocument
+     */
+    public function setWatermark($watermark)
+    {
+        $this->watermark = $watermark;
+
+        return $this;
+    }
+
+    /**
+     * Get watermark. CSF watermark separate pdf documents with student related watermark -feature
+     *
+     * @return bool
+     */
+    public function getWatermark()
+    {
+        return $this->watermark;
     }
 }
