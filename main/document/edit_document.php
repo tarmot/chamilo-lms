@@ -61,6 +61,7 @@ $(function() {
 $this_section = SECTION_COURSES;
 $lib_path = api_get_path(LIBRARY_PATH);
 
+$count_display_modified_messages = 0;
 $course_info = api_get_course_info();
 $group_id = api_get_group_id();
 $sessionId = api_get_session_id();
@@ -92,6 +93,7 @@ if (isset($_GET['id'])) {
     $doc = basename($file);
     $readonly = $document_data['readonly'];
     $file_type = $document_data['filetype'];
+    $watermark = $document_data['watermark']; // CSF watermark separate pdf documents with student related
 }
 
 if (empty($document_data)) {
@@ -258,13 +260,43 @@ if (isset($_POST['comment'])) {
                 ['c_id = ? AND id = ?' => [$course_id, $document_id]]
             );
 
-            if ($file_type != 'link') {
+            if ($file_type != 'link' && $count_display_modified_messages < 1) {
                 Display::addFlash(Display::return_message(get_lang('fileModified')));
+                $count_display_modified_messages += 1;
             } else {
-                Display::addFlash(Display::return_message(get_lang('CloudLinkModified')));
+                if ($count_display_modified_messages < 1) {
+                    Display::addFlash(Display::return_message(get_lang('CloudLinkModified')));
+                    $count_display_modified_messages += 1;
+                }
             }
         } else {
             Display::addFlash(Display::return_message(get_lang('UrlAlreadyExists'), 'warning'));
+            $count_display_modified_messages += 1;
+        }
+    }
+}
+
+/* Code to change the watermarked value - CSF watermark separate pdf documents with student related watermark -feature */
+if (isset($_POST['watermark_file'])) {
+    $watermark_file = $_POST['watermark_file'];
+
+    if (!empty($document_id)) {
+        if ($file_type == 'file') {
+            $path_info = pathinfo($document_data['path']);
+            if ($path_info['extension'] == 'pdf') {
+                $params = [
+                    'watermark' => $watermark_file,
+                ];
+                Database::update(
+                    $dbTable,
+                    $params,
+                    ['c_id = ? AND id = ?' => [$course_id, $document_id]]
+                );
+                if ($count_display_modified_messages < 1) {
+                    Display::addFlash(Display::return_message(get_lang('fileModified')));
+                    $count_display_modified_messages += 1;
+                }
+            }
         }
     }
 }
@@ -466,6 +498,17 @@ if ($owner_id == api_get_user_id() ||
             }
         }
     }
+
+    // CSF watermark separate pdf documents with student related watermark -feature
+    // Radio button group to set if document will be watermarked when downloaded
+    if ($file_type != 'link') {
+        if ($owner_id == api_get_user_id() || api_is_platform_admin()) {
+            $options = [0=>get_lang('No'), 1=>get_lang('Yes')];
+            $watermark_file = $form->addRadio('watermark_file', get_lang('Watermark file'), $options);
+            $group = $watermark_file->getElements();
+        }
+    }
+    
 
     if ($file_type == 'link') {
         $form->addRule('title', get_lang('PleaseEnterCloudLinkName'), 'required');

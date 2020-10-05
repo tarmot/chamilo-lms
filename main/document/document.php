@@ -66,6 +66,7 @@ if (!empty($tempRealPath) &&
 ) {
     unlink($tempRealPath);
 }
+
 $_user = api_get_user_info();
 $courseInfo = api_get_course_info();
 $courseId = $courseInfo['real_id'];
@@ -383,6 +384,59 @@ switch ($action) {
             Event::event_download($document_data['url']);
             exit;
         }
+        break;
+    case 'downloadwatermarked':
+        //CSF watermark separate pdf documents with student related watermark -feature
+        //Only pdf format is supported
+
+         // Get the document data from the ID
+         $document_data = DocumentManager::get_document_data_by_id(
+            $document_id,
+            api_get_course_id(),
+            false,
+            $sessionId
+        );
+        if ($sessionId != 0 && !$document_data) {
+            // If there is a session defined and asking for the document *from
+            // the session* didn't work, try it from the course (out of a
+            // session context)
+            $document_data = DocumentManager::get_document_data_by_id(
+                $document_id,
+                api_get_course_id(),
+                false,
+                0
+            );
+        }
+        // Check whether the document is in the database
+        if (empty($document_data)) {
+            api_not_allowed();
+        }
+
+        // Launch event
+        Event::event_download($document_data['url'].'watermarked');
+
+        // Check visibility of document and paths
+        if (!($isAllowedToEdit || $groupMemberWithUploadRights) &&
+            !DocumentManager::is_visible_by_id($document_id, $courseInfo, $sessionId, api_get_user_id())
+        ) {
+            api_not_allowed(true);
+        }
+
+        $full_file_name = $base_work_dir.$document_data['path'];
+        $fileInfo = pathinfo($full_file_name);
+        
+        if ($fileInfo['extension'] == 'pdf') {
+            $file_name_and_path = PDF::pdf_to_pdf($full_file_name, $document_data['path'], $course_code);
+            $full_file_name = $file_name_and_path[0];
+            $base_work_dir = $file_name_and_path[1];
+            if (Security::check_abs_path($full_file_name, $base_work_dir.'/')) {
+                $result = DocumentManager::file_send_for_download($full_file_name, true);
+                if ($result === false) {
+                    api_not_allowed(true);
+                }
+            }
+        }
+        exit;
         break;
     case 'export_to_pdf':
         if (api_get_setting('students_export2pdf') == 'true' ||
@@ -1837,7 +1891,6 @@ if (!empty($documentAndFolders)) {
             if (api_get_configuration_value('save_titles_as_html')) {
                 $document_name = strip_tags($document_name);
             }
-
             $row['name'] = $document_name;
             // Data for checkbox
             if (($isAllowedToEdit || $groupMemberWithUploadRights) && count($documentAndFolders) > 1) {

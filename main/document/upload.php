@@ -193,6 +193,7 @@ if (!empty($_FILES)) {
         $_POST['curdirpath'],
         $_POST['title'],
         $_POST['comment'],
+        $_POST['watermark_file'], // CSF watermark separate pdf documents with student related watermark -feature
         $unzip,
         $_POST['if_exists'],
         $index,
@@ -263,6 +264,7 @@ $label =
 $form->addElement('file', 'file', [get_lang('File'), $label], 'style="width: 250px" id="user_upload"');
 $form->addElement('text', 'title', get_lang('Title'), ['id' => 'title_file']);
 $form->addElement('textarea', 'comment', get_lang('Comment'));
+$form->addElement('checkbox', 'watermark_file', get_lang('Watermark file'), get_lang('Yes'), 'value="1"'); // CSF watermark separate pdf documents with student related watermark -feature
 
 // Advanced parameters
 $form->addButtonAdvancedSettings('advanced_params');
