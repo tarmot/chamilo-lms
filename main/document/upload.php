@@ -84,11 +84,37 @@ if (empty($document_data)) {
 $group_properties = [];
 
 $htmlHeadXtra[] = '<script>
+
+let elem;
+
 function check_unzip() {
     if (document.upload.unzip.checked) {        
         document.upload.if_exists[1].checked=true;        
     } else {
         document.upload.if_exists[2].checked=true;
+    }
+}
+
+function check_watermark() {
+    if (document.upload.watermark_file.checked) {
+        elem.style.display="block";
+        elem.label.style.display="block";
+    } else {
+        elem.style.display="none";
+        elem.label.style.display="none";
+    }
+}
+
+function hideWatermarkText() {
+    var labels = document.getElementsByTagName("LABEL");
+    for (var i = 0; i < labels.length; i++) {
+        if (labels[i].htmlFor == "upload_watermark_text") {
+            elem = document.getElementById(labels[i].htmlFor);
+            elem.label = labels[i];
+            elem.style.display="none";
+            elem.label.style.display="none";
+            break;         
+        }
     }
 }
 
@@ -194,6 +220,7 @@ if (!empty($_FILES)) {
         $_POST['title'],
         $_POST['comment'],
         $_POST['watermark_file'], // CSF watermark separate pdf documents with student related watermark -feature
+        $_POST['watermark_text'], // CSF watermark separate pdf documents with student related watermark -feature
         $unzip,
         $_POST['if_exists'],
         $index,
@@ -264,8 +291,13 @@ $label =
 $form->addElement('file', 'file', [get_lang('File'), $label], 'style="width: 250px" id="user_upload"');
 $form->addElement('text', 'title', get_lang('Title'), ['id' => 'title_file']);
 $form->addElement('textarea', 'comment', get_lang('Comment'));
-$form->addElement('checkbox', 'watermark_file', get_lang('Watermark file'), get_lang('Yes'), 'value="1"'); // CSF watermark separate pdf documents with student related watermark -feature
 
+// CSF watermark separate pdf documents with student related watermark -feature
+// Add watermark checkbox only in admin view
+if (api_is_platform_admin()){
+    $form->addElement('checkbox', 'watermark_file', get_lang('Watermark file'), get_lang('Yes'), 'onclick="javascript: check_watermark();" value="1"');
+    $form->addElement('text', 'watermark_text', get_lang('Text to be added after basic watermark (First name, Last Name, Course Name, Date)'));
+}
 // Advanced parameters
 $form->addButtonAdvancedSettings('advanced_params');
 $form->addElement('html', '<div id="advanced_params_options" style="display:none">');
@@ -339,5 +371,6 @@ $headers = [
 ];
 
 echo Display::tabs($headers, [$multipleForm->returnForm(), $form->returnForm()], 'tabs');
+echo('<script>hideWatermarkText();</script>');
 
 Display::display_footer();
