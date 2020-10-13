@@ -34,6 +34,34 @@ $groupRights = Session::read('group_member_with_upload_rights');
 // Template's javascript
 $htmlHeadXtra[] = '
 <script>
+
+let elem;
+
+function check_watermark() {
+    if (elem.style.display == "none") {
+        elem.style.display="block";
+        elem.label.style.display="block";
+    } else {
+        hideWatermarkText();
+    }
+}
+
+function getWatermarkTextElement() {
+    var labels = document.getElementsByTagName("LABEL");
+    for (var i = 0; i < labels.length; i++) {
+        if (labels[i].htmlFor == "formEdit_watermark_text") {
+            elem = document.getElementById(labels[i].htmlFor);
+            elem.label = labels[i];
+            break;         
+        }
+    }
+}
+
+function hideWatermarkText() {
+    elem.style.display="none";
+    elem.label.style.display="none";
+}
+
 $(function() {
     $(".scrollbar-light").scrollbar();
 
@@ -94,6 +122,7 @@ if (isset($_GET['id'])) {
     $readonly = $document_data['readonly'];
     $file_type = $document_data['filetype'];
     $watermark = $document_data['watermark']; // CSF watermark separate pdf documents with student related
+    $watermarkText = $document_data['watermark_text']; // CSF watermark separate pdf documents with student related
 }
 
 if (empty($document_data)) {
@@ -280,22 +309,29 @@ if (isset($_POST['comment'])) {
 if (isset($_POST['watermark_file'])) {
     $watermark_file = $_POST['watermark_file'];
 
-    if (!empty($document_id)) {
-        if ($file_type == 'file') {
-            $path_info = pathinfo($document_data['path']);
-            if ($path_info['extension'] == 'pdf') {
-                $params = [
-                    'watermark' => $watermark_file,
-                ];
-                Database::update(
-                    $dbTable,
-                    $params,
-                    ['c_id = ? AND id = ?' => [$course_id, $document_id]]
-                );
-                if ($count_display_modified_messages < 1) {
-                    Display::addFlash(Display::return_message(get_lang('fileModified')));
-                    $count_display_modified_messages += 1;
-                }
+    if (isset($_POST['watermark_text'])) {
+        $watermark_text = $_POST['watermark_text'];
+    }
+} else {
+    $watermark_file = 0;
+    $watermark_text = null;
+}
+if (!empty($document_id)) {
+    if ($file_type == 'file') {
+        $path_info = pathinfo($document_data['path']);
+        if ($path_info['extension'] == 'pdf') {
+            $params = [
+                'watermark' => $watermark_file,
+                'watermark_text' => $watermark_text
+            ];
+            Database::update(
+                $dbTable,
+                $params,
+                ['c_id = ? AND id = ?' => [$course_id, $document_id]]
+            );
+            if ($count_display_modified_messages < 1) {
+                Display::addFlash(Display::return_message(get_lang('fileModified')));
+                $count_display_modified_messages += 1;
             }
         }
     }
@@ -501,14 +537,18 @@ if ($owner_id == api_get_user_id() ||
 
     // CSF watermark separate pdf documents with student related watermark -feature
     // Radio button group to set if document will be watermarked when downloaded
-    if ($file_type != 'link') {
-        if ($owner_id == api_get_user_id() || api_is_platform_admin()) {
-            $options = [0=>get_lang('No'), 1=>get_lang('Yes')];
-            $watermark_file = $form->addRadio('watermark_file', get_lang('Watermark file'), $options);
-            $group = $watermark_file->getElements();
+    // Available only in admin view
+    if (api_is_platform_admin()) {
+        if ($file_type != 'link') {
+            if ($owner_id == api_get_user_id() || api_is_platform_admin()) {
+
+                if ($extension == 'pdf') {
+                    $form->addElement('checkbox', 'watermark_file', get_lang('Watermark file'), get_lang('Yes'), 'onclick="javascript: check_watermark();" value="1"');
+                    $form->addElement('text', 'watermark_text', get_lang('Text to be added after basic watermark (First name, Last Name, Course Name, Date)'));
+                }
+            }
         }
     }
-    
 
     if ($file_type == 'link') {
         $form->addRule('title', get_lang('PleaseEnterCloudLinkName'), 'required');
@@ -538,6 +578,8 @@ if ($owner_id == api_get_user_id() ||
     $defaults['comment'] = $document_data['comment'];
     $defaults['origin'] = api_get_origin();
     $defaults['origin_opt'] = isset($_GET['origin_opt']) ? Security::remove_XSS($_GET['origin_opt']) : null;
+    $defaults['watermark_file'] = $watermark; // CSF watermark separate pdf documents with student related watermark -feature
+    $defaults['watermark_text'] = $watermarkText; // CSF watermark separate pdf documents with student related watermark -feature
 
     $form->setDefaults($defaults);
 
@@ -604,6 +646,12 @@ if ($owner_id == api_get_user_id() ||
 
         echo $form->returnForm();
     }
+}
+
+echo('<script>getWatermarkTextElement()</script>');
+
+if ($watermark == 0) {
+    echo('<script>hideWatermarkText();</script>');
 }
 
 Display::display_footer();

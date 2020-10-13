@@ -312,6 +312,13 @@ switch ($action) {
             false,
             $sessionId
         );
+
+        // CSF watermark separate pdf documents with student related watermark -feature
+        // Allow download parameter only when the document doesn't require watermarking (in latter case downloadwatermarked parameter is used)
+        if ($document_data['watermark'] != 0) {
+            api_not_allowed(true);
+        }
+        
         if ($sessionId != 0 && !$document_data) {
             // If there is a session defined and asking for the document *from
             // the session* didn't work, try it from the course (out of a
@@ -424,13 +431,15 @@ switch ($action) {
 
         $full_file_name = $base_work_dir.$document_data['path'];
         $fileInfo = pathinfo($full_file_name);
+        $watermarkText = $document_data['watermark_text'];
         
         if ($fileInfo['extension'] == 'pdf') {
-            $file_name_and_path = PDF::pdf_to_pdf($full_file_name, $document_data['path'], $course_code);
+            $file_name_and_path = PDF::pdf_to_pdf($full_file_name, $document_data['title'], $courseInfo['title'], $watermarkText);
             $full_file_name = $file_name_and_path[0];
             $base_work_dir = $file_name_and_path[1];
             if (Security::check_abs_path($full_file_name, $base_work_dir.'/')) {
                 $result = DocumentManager::file_send_for_download($full_file_name, true);
+                unlink($full_file_name);
                 if ($result === false) {
                     api_not_allowed(true);
                 }
@@ -473,6 +482,7 @@ switch ($action) {
                 true,
                 $sessionId
             );
+
             if ($sessionId != 0 && !$document_info) {
                 /* If there is a session defined and asking for the document
                   from the session didn't work, try it from the course
@@ -482,6 +492,12 @@ switch ($action) {
                     api_get_course_id(),
                     0
                 );
+            }
+
+            // CSF watermark separate pdf documents with student related watermark -feature
+            // Allow copytomyfiles parameter only when the document doesn't require watermarking
+            if ($document_info['watermark'] != 0) {
+                api_not_allowed(true);
             }
 
             if (!empty($groupId)) {
@@ -560,7 +576,7 @@ switch ($action) {
                         Display::return_message(get_lang('CopyMade').' '.$file_link, 'confirmation', false)
                     );
                 }
-            }
+            }    
         }
         break;
     case 'convertToPdf':

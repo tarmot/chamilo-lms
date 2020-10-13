@@ -98,6 +98,13 @@ class CDocument
     protected $watermark; // CSF watermark separate pdf documents with student related watermark -feature
 
     /**
+     * @var bool
+     *
+     * @ORM\Column(name="watermark_text", type="string", length=255, nullable=true)
+     */
+    protected $watermarkText; // CSF watermark separate pdf documents with student related watermark -feature
+
+    /**
      * Set path.
      *
      * @param string $path
@@ -333,6 +340,17 @@ class CDocument
         return $this;
     }
     
+
+    /**
+     * Get watermark. CSF watermark separate pdf documents with student related watermark -feature
+     *
+     * @return bool
+     */
+    public function getWatermark()
+    {
+        return $this->watermark;
+    }
+
       /**
      * Set watermark. CSF watermark separate pdf documents with student related watermark -feature
      *
@@ -348,12 +366,28 @@ class CDocument
     }
 
     /**
-     * Get watermark. CSF watermark separate pdf documents with student related watermark -feature
+     * Get watermark text. CSF watermark separate pdf documents with student related watermark -feature
      *
      * @return bool
      */
-    public function getWatermark()
+    public function getWatermarkText()
     {
-        return $this->watermark;
+        return $this->watermarkText;
     }
+
+      /**
+     * Set watermark. CSF watermark separate pdf documents with student related watermark -feature
+     *
+     * @param bool $watermarkText
+     *
+     * @return CDocument
+     */
+    public function setWatermarkText($watermarkText)
+    {
+        $this->watermarkText = $watermarkText;
+
+        return $this;
+    }
+
+    
 }

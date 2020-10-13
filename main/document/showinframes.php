@@ -59,6 +59,12 @@ if ($session_id != 0 && !$document_data) {
     );
 }
 
+// CSF watermark separate pdf documents with student related watermark -feature
+// Allow showinframes only when the document doesn't require watermarking
+if ($document_data['watermark'] != 0) {
+    api_not_allowed(true);
+}
+
 if (empty($document_data)) {
     api_not_allowed(true);
 }

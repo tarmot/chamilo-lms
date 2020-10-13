@@ -593,7 +593,7 @@ class DocumentManager
         if ($search != true) {
             $where .= "docs.path NOT LIKE '".Database::escape_string($path.$addedSlash.'%/%')."' AND";
         }
-        //Added watermark (CSF watermark separate pdf documents with student related watermark -feature)
+        //Added watermark and watermarkText(CSF watermark separate pdf documents with student related watermark -feature)
         $sql = "SELECT
                     docs.id,
                     docs.filetype,
@@ -604,6 +604,7 @@ class DocumentManager
                     docs.readonly,
                     docs.session_id,
                     docs.watermark,
+                    docs.watermark_text,
                     last.session_id item_property_session_id,
                     last.lastedit_date,
                     last.visibility,
@@ -2951,6 +2952,7 @@ class DocumentManager
      * @param string $title
      * @param string $comment
      * @param bool   $watermark               // CSF watermark separate pdf documents with student related watermark -feature
+     * @param bool   $watermarkText           // CSF watermark separate pdf documents with student related watermark -feature
      * @param int    $unzip                   unzip or not the file
      * @param string $ifExists                overwrite, rename or warn (default)
      * @param bool   $index_document          index document (search xapian module)
@@ -2969,7 +2971,8 @@ class DocumentManager
         $path,
         $title = '',
         $comment = '',
-        $watermark = 0,
+        $watermark = 0, // CSF watermark separate pdf documents with student related watermark -feature
+        $watermark_text = '', // CSF watermark separate pdf documents with student related watermark -feature
         $unzip = 0,
         $ifExists = '',
         $index_document = false,
@@ -3038,6 +3041,12 @@ class DocumentManager
                         
                         if (!empty($watermark)) {
                             $params['watermark'] = trim($watermark);
+                        }
+
+                        if (!empty($watermark_text) && $watermark == 1) {
+                            $params['watermark_text'] = trim($watermark_text);
+                        } else {
+                            $params['watermark_text'] = null;
                         }
 
                         Database::update(
