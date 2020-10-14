@@ -568,7 +568,7 @@ class PDF
             //Set watermark text (this function is used only for watermarking existing pdf files)
             $pdf->showWatermarkText = true;
             $user = api_get_user_info();
-            $fullWatermarkText = $user["complete_name"].'  '.date("Y/m/d").'  '.$courseTitle.'  '.$watermarkText;
+            $fullWatermarkText = $user["complete_name"].'  '.date("Y/m/d").'  '.$watermarkText;
             $pdf->SetWatermarkText($fullWatermarkText);
 
             for ($i=1; $i <= $pageCount; $i++) { 

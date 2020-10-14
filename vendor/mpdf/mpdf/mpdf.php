@@ -13238,8 +13238,12 @@ class mPDF
 		// Repeating it will not output anything as mPDF thinks it is set
 		$adj = ((cos(deg2rad($angle))) * ($strlen / 2));
 		$opp = ((sin(deg2rad($angle))) * ($strlen / 2));
-		$wx = 10; // CSF settings
-		$wy = $this->h - 10; // CSF settings
+		// CSF params for horizontal bottom watermark
+		$wx = 60; // CSF settings
+		$wy = $this->h - 3; // CSF settings
+		// CSF params for vertical left watermark
+		$wx = 3; // CSF settings
+		$wy = $this->h - 40; // CSF settings
 		//$wx = ($this->w / 2) - $adj + $offset / 3;
 		//$wy = ($this->h / 2) + $opp;
 		$this->Rotate($angle, $wx, $wy);
@@ -15723,7 +15727,7 @@ class mPDF
 
 		/* -- WATERMARK -- */
 		if (($this->watermarkText) && ($this->showWatermarkText)) {
-			$this->watermark($this->watermarkText, 0, 12, $this->watermarkTextAlpha); // Watermark text (CSF watermark separate pdf documents with student related watermark -feature)
+			$this->watermark($this->watermarkText, 90, 8, $this->watermarkTextAlpha); // Watermark text (CSF watermark separate pdf documents with student related watermark -feature)
 			//$this->watermark($this->watermarkText, 45, 120, $this->watermarkTextAlpha); // Watermark text
 		}
 		if (($this->watermarkImage) && ($this->showWatermarkImage)) {
